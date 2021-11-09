@@ -1,0 +1,23 @@
+import numpy as np
+import scipy as sp
+import random as rand
+import pandas as pan
+
+# a short function to define the x and y vector accounting for the periodic boundary conditions
+
+def periodic_dist(xi,yi,xj,yj,lx):
+
+    if (xj - xi) > lx / 2:
+        x = xj - xi - lx
+    elif (xj - xi) < -lx / 2:
+        x = xj - xi + lx
+    else:
+        x = (xj - xi)
+    if (yj - yi) > lx / 2:
+        y = yj - yi - lx
+    elif (yj - yi) < -lx / 2:
+        y = yj - yi + lx
+    else:
+        y = (yj - yi)
+
+    return(x,y)
