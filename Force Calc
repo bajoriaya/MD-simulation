@@ -1,0 +1,70 @@
+import numpy as np
+import scipy as sp
+import random as rand
+import pandas as pan
+
+from initialize import initialize_system
+
+## this script is going to to reslve the forces acting on each particle
+
+def force_calc(running_data, sigma, epsilon,rcutoff,lx):
+    from periodic_distance import periodic_dist
+
+    # for loop to iterate across every part
+    for i in range (0, len(running_data)):
+
+        # this loop looks at the i disk and determines the force acting on it for every j disk
+        for j in range (0,len(running_data)):
+
+            # if i is equal to j then it is the same disk, so we disregard j and move onto next.
+
+            if i == j:
+                continue
+
+            # we calculate the x and y vector between j and i using the function periodic distance
+            distx,disty = periodic_dist(running_data[i, 0],running_data[i, 1],running_data[j, 0],running_data[j, 1],lx)
+
+            # we then determine the periodic distance
+            r = (distx**2 + disty **2)**.5
+
+            # if the distance is less than the cutoff then we complete the force calculation
+            if r < (rcutoff*sigma):
+                # find the force
+                force = ((24*epsilon) / r) * (2 * ((sigma / r) ** 12) - (sigma / r) ** 6)
+
+                # resolve the normalised x and y distances
+                # this enables a postive force to be in the direction of the other particle
+                x_norm = (1/(r))*distx
+                y_norm = (1/(r))*disty
+
+                # now we calculate the actual force in each
+                x_force , y_force = x_norm*force , y_norm*force
+
+                # we update the value of the force in the cell (this force will get zero'd in the next timestep)
+
+                running_data[i,4] = running_data[i,4] + x_force
+                running_data[i,5] = running_data[i,5] + y_force
+
+            # the only other possibility is that i does not equal j and the distance squared is larger than the
+            # cutoff squared
+
+    return(running_data)
+
+# # size of square
+# lx = 20
+#
+# # number of particles
+# p = 20
+#
+# # sigma
+# sigma = 1
+#
+# T = 5
+#
+# # test system
+#
+# matinit = initialize_system(lx, p, sigma, T)
+#
+# runing_data = force_calc(matinit,sigma,epsilon = 1, rcutoff = 2.5, lx = 20)
+#
+# print(runing_data)
