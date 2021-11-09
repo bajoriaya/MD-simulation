@@ -1,0 +1,110 @@
+import numpy as np
+import scipy as sp
+import random as rand
+import pandas as pan
+import copy
+
+from periodic_distance import periodic_dist
+
+
+# this script will initialize the original x and y co-ordinates of the disks, ensuring that they are at least 2^ 1/6 sigma away
+# # initializing variables
+#
+# # size of square
+# lx = 20
+#
+# # number of particles
+# p = 2
+#
+# # sigma
+# sigma = 1
+#
+# T = 5
+
+
+########################################################################################################################
+
+def initialize_system(lx, p, sigma, T, dt):
+    # create a p x 2 set of zero matrix that will be populated by the position of p disks
+    # initial x,y position and initial x,y velocity
+
+    # (x(t), y(t), vx(t), vy(t), Fx, Fy, xdtprev, ydtprev, xdtnext, ydtnext, x(t) unwrapped, y(t) unwrapped,xtnext,ytnext)
+    init_ps_v = np.zeros((p, 16))
+
+    for i in range(0, p):
+
+        # set x y positions
+        init_ps_v[i, 0] = rand.uniform(0, lx)
+        init_ps_v[i, 1] = rand.uniform(0, lx)
+
+        # set x y velocities
+        init_ps_v[i, 2] = rand.uniform(-1, 1)
+        init_ps_v[i, 3] = rand.uniform(-1, 1)
+
+        # set xy unwrapped positions
+        init_ps_v[i, 10] = init_ps_v[i, 0].copy()
+        init_ps_v[i, 11] = init_ps_v[i, 1].copy()
+
+        # we now check each disk to ensure that we are more than sigma ^1/6 away from each of the other disks
+        for j in range(0, i):
+            x = float(0)
+            y = float(0)
+
+            # we now check which distance is the closest distance between two disks (including the periodic boundary
+            # condition) taking the minimum position for x and the minimum position for y keeping the sign for future use
+
+            # minimum x vector
+
+            x, y = periodic_dist(init_ps_v[i, 0], init_ps_v[i, 1], init_ps_v[j, 0], init_ps_v[j, 1], lx)
+
+            distancerat = (x ** 2 + y ** 2) / (sigma * (2 ** (1 / 6)))
+
+            # create a while loop that repeats the previous step until the distance between all the disks are above sigma^(1/6)
+            while distancerat < 1:
+                init_ps_v[i, 0] = rand.uniform(0, lx)
+                init_ps_v[i, 1] = rand.uniform(0, lx)
+
+                x, y = periodic_dist(init_ps_v[i, 0], init_ps_v[i, 1], init_ps_v[j, 0], init_ps_v[j, 1], lx)
+
+                distancerat = (x ** 2 + y ** 2) / (sigma * (2 ** (1 / 6)))
+
+    #### we now adjust the x and y velocities of each particle to eliminate any drift in the system
+
+    # we calculate the average x velocity, y velocity and total velocity squared
+    ## we now need to define the sum of the squares to calculate the average velocity
+
+    # initialize the sums
+    x_vel_sum = 0
+    y_vel_sum = 0
+    velocity = 0
+
+    # find the sum of x, y and x^+y^2
+
+    for i in range(0, p):
+        x_vel_sum = x_vel_sum + init_ps_v[i, 2]
+        y_vel_sum = y_vel_sum + init_ps_v[i, 3]
+        velocity = velocity + ((init_ps_v[i, 2]) ** 2 + (init_ps_v[i, 3]) ** 2) ** .5
+    # first we dfine fs (a multiplication factor)
+
+    vel_av = velocity / p
+    x_vel_av = x_vel_sum / p
+    y_vel_av = y_vel_sum / p
+
+    f_s = ((3 * T) / (vel_av ** 2)) ** (.5)
+
+    for i in range(0, p):
+        init_ps_v[i, 2] = (init_ps_v[i, 2] - x_vel_av) * f_s
+        init_ps_v[i, 3] = (init_ps_v[i, 3] - y_vel_av) * f_s
+
+     # now that we have the velocities. We calculate the previous dt so that the particles
+    # # have an initial velocity (if we didn't then the particles would not move at all
+    #
+    #for i in range(0, p):
+      #  init_ps_v[i, 6] = dt * init_ps_v[i, 2]
+      #  init_ps_v[i, 7] = dt * init_ps_v[i, 3]
+
+    return (init_ps_v)
+
+# init_pos = initialize_system(lx, p, sigma, T)
+
+# print(init_pos)
