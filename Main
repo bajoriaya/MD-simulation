@@ -1,0 +1,88 @@
+import copy
+import numpy as np
+import scipy as sp
+import random as rand
+import pandas as pan
+import matplotlib.pyplot as plt
+import matplotlib;matplotlib.use("TkAgg")
+
+from initialize import initialize_system
+from periodic_distance import periodic_dist
+from position_velocity_engine import posn_vel_engine
+from force_calc import force_calc
+
+# initialising variables
+rho = 20
+T = 0.1
+rcut = 2.5
+alpha = 1
+epsilon = 1
+sigma = 1
+m = 1
+lx = 20
+N = 10000
+dt = 0.05
+
+# file names
+logfile = 1
+ftraj = 1
+trajfilename = 1
+
+# we first generate the initial position of the particles in question
+# this also includes the smoothing function and also generates the zero data that will be updated during the simulation
+
+livedata = initialize_system(lx, rho, sigma, T, dt)
+initial_config = copy.copy(livedata)
+
+plt.ion()
+fig = plt.figure()
+# creates the limits of the canvas
+ax = plt.axes(xlim=(0, lx), ylim=(0, lx))
+plt.show()
+
+
+for timestep in range(0, N):
+
+    # we now calculate the force for each disk and distribute it along the x and y vectors
+    livedata = force_calc(livedata, sigma, epsilon, rcut, lx)
+
+    # with this force for each disk, we generate the velocity and the new positions
+    for disk in range(0, rho):
+        # we calculate the new positions and current velocities in the x position
+        livedata[disk, 12], livedata[disk, 8], livedata[disk, 2] = posn_vel_engine(livedata[disk, 0], livedata[disk, 6],
+                                                                                   livedata[disk, 4], m, dt, lx)
+
+        # we calculate the new positions and current velocities in the y position
+        livedata[disk, 13], livedata[disk, 9], livedata[disk, 3] = posn_vel_engine(livedata[disk, 1], livedata[disk, 7],
+                                                                                   livedata[disk, 5], m, dt, lx)
+
+    # we now have the new x and y positions
+
+    ##############################################################################################
+
+
+    # your x and y co-ordinates
+    points, = plt.plot(livedata[:, 0], livedata[:, 1], 'o', c='black')
+    fig.canvas.draw_idle()
+    plt.pause(0.01)
+    points.remove()
+    ###############################################################################################
+    # we prepare the dataset for the next round
+    for disk in range(0, rho):
+
+        # we now now add dxnext and dynext to the unwrapped xt's
+        # livedata[disk, 10] = copy.copy(livedata[disk, 10]) + copy.copy(livedata[disk, 8])
+        # livedata[disk, 11] = copy.copy(livedata[disk, 11]) + copy.copy(livedata[disk, 9])
+
+        # we set xt and yt as xtnext and ytnext
+        livedata[disk,0] = copy.copy(livedata[disk,12])
+        livedata[disk,1] = copy.copy(livedata[disk,13])
+
+        # we move set xdtprev and ydtprev as xdtnext and ydtnext to prepare for the next calc
+        livedata[disk,6] = copy.copy(livedata[disk,8])
+        livedata[disk,7] = copy.copy(livedata[disk,9])
+
+        # we zero the forces, velocities and the next yd
+        livedata[disk,[2,3,4,5,8,9]] = 0
+
+print(livedata)
