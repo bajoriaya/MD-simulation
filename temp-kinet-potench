@@ -1,0 +1,37 @@
+import copy
+
+import numpy as np
+import scipy as sp
+import random as rand
+import pandas as pan
+
+
+# this will calculate the new position and the new velocity of the particle in question.
+# periodic boundary conditions will be implemented in the next step. this way we can keep a record of
+# both the wrapped disk position and the unwrapped disk position to calculate the diffusion constant.
+# this function is designed to be used inside a for loop, looping over whatever dataset you have.
+
+
+def posn_vel_engine(xt, xdtprev, Fx, m, dt, lx):
+
+    # we calculate the new position
+    # we are using the current position and the differences as if we calculated by using the original positions,
+    # one would encounter issues with disks that have been swapped with the periodic boundary conditions
+    xtnext = 2 * xt - (xt - xdtprev) + (Fx / m) * dt ** 2
+
+    # we calculate the difference in position
+    xdtnext = xtnext - xt
+
+    # if the new position is beyond the boundary conditions, we execute a move where the new position is wrapped
+    if xtnext < 0:
+        xtnext = copy.copy(xtnext)+xdtnext + lx
+    elif xtnext > lx:
+        xtnext = copy.copy(xtnext)+xdtnext - lx
+
+    # here we calculate the velocity at time t based on the new position minus the old position.
+    # NOTE to eliminate confusion from the boundary condition, we use the dt
+    vel_t = ((xt + xdtnext)-(xt-xdtprev))/2*dt
+
+    # we return the new values
+    # the next position, the positive change in x,
+    return(xtnext, xdtnext, vel_t)
